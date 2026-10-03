@@ -1,0 +1,8 @@
+# Python 3.13.15 · Linux x86_64 · 2 CPU lógicas · 2026-10-01 19:53
+d = 3, 400 carreras, esperado por nodo = 100.0
+  Nodo 0: 162 victorias
+  Nodo 1: 117 victorias
+  Nodo 2: 74 victorias
+  Nodo 3: 47 victorias
+chi^2 = 76.18 (3 g.l.; crítico al 5 % = 7.81); p = 0.000
+Se rechaza la uniformidad al 5 %.

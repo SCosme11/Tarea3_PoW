@@ -1,0 +1,11 @@
+# Python 3.13.15 · Linux x86_64 · 2 CPU lógicas · 2026-10-01 19:54
+Tasa de un solo hilo: H1 = 145,852 hash/s
+
+| d | N | Intentos medios (4 nodos) | Teórico 16^d | Media/Teórico | Desv. est. | Mediana | Tiempo medio (s) | IC 95 % tiempo (s) | Tiempo teórico 16^d/H (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| 3 | 300 | 4,243 | 4,096 | 1.04 | 4,422 | 2,943 | 0.033 | ±0.004 | 0.031 |
+| 4 | 200 | 68,644 | 65,536 | 1.05 | 64,027 | 52,124 | 0.532 | ±0.069 | 0.508 |
+| 5 | 60 | 1,140,049 | 1,048,576 | 1.09 | 1,121,631 | 767,852 | 8.861 | ±2.219 | 8.150 |
+(datos crudos en resultados/benchmark_dificultad.csv)
+Razón de tiempos medios d=4 / d=3: 16.4 (teórico 16)
+Razón de tiempos medios d=5 / d=4: 16.6 (teórico 16)

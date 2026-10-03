@@ -1,0 +1,10 @@
+# Python 3.13.15 · Linux x86_64 · 2 CPU lógicas · 2026-10-01 20:05
+Tasa de un solo hilo: H1 = 140,827 hash/s (d = 4, 40 carreras por fila)
+
+| Nodos (hilos) | Intentos medios | Tiempo medio (s) | Hash/s totales | Aceleración vs 1 nodo |
+|---|---|---|---|---|
+| 1 | 70,424 | 0.524 | 134,463 | 1.00x |
+| 2 | 55,270 | 0.424 | 130,302 | 0.97x |
+| 4 | 67,897 | 0.540 | 125,807 | 0.94x |
+| 8 | 86,634 | 0.679 | 127,580 | 0.95x |
+(datos crudos en resultados/benchmark_hilos.csv)

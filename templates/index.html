@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Simulador de Proof of Work</title>
+<style>
+  :root {
+    --chalk:#EFF0ED; --paper:#FFFFFF; --ink:#14161A; --ink2:#4A5059; --ink3:#868C95;
+    --line:#DADCD6; --line2:#E8E9E4;
+    --blue:#2438F5; --blue-soft:#E6E9FE;
+    --green:#0B8F5A; --green-soft:#DDF2E8;
+    --red:#D2352C; --red-soft:#FCE8E6;
+    --ui:"Bahnschrift","Avenir Next","Segoe UI Variable Display","Helvetica Neue",system-ui,sans-serif;
+    --mono:"Cascadia Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; background:var(--chalk); color:var(--ink); font:15px/1.45 var(--ui); -webkit-font-smoothing:antialiased; }
+  h1, h2, p, dl, dd, ol, ul { margin:0; padding:0; }
+  ol, ul { list-style:none; }
+  .mono { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+  .app { max-width:1680px; margin:0 auto; padding:0 28px 28px; display:grid; grid-template-columns:344px minmax(0,1fr); grid-template-rows:auto 1fr; gap:18px 22px; min-height:100vh; }
+  .top { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; height:68px; }
+  .top h1 { display:flex; align-items:center; gap:12px; font-size:21px; font-weight:700; letter-spacing:-0.01em; }
+  .params { display:flex; gap:28px; }
+  .params div { display:flex; align-items:baseline; gap:8px; }
+  .params dt { color:var(--ink3); font-size:13px; }
+  .params dd { font-size:17px; font-weight:600; }
+
+  .izq, .der { display:flex; flex-direction:column; gap:18px; min-width:0; }
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:22px; }
+  h2 { font-size:18px; font-weight:700; letter-spacing:-0.01em; }
+  .p-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:18px; flex-wrap:wrap; }
+  .vacio { color:var(--ink3); font-size:14px; padding:6px 0 2px; }
+
+  /* Formulario */
+  label { display:block; font-size:13px; color:var(--ink2); margin:0 0 6px; }
+  select, input[type=number] { width:100%; height:46px; padding:0 14px; border:1.5px solid var(--line); border-radius:12px; background:var(--paper); color:var(--ink); font:inherit; font-size:15px; appearance:none; -webkit-appearance:none; outline:none; transition:border-color .15s, box-shadow .15s; }
+  select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%23868C95' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:34px; }
+  select:focus, input[type=number]:focus { border-color:var(--blue); box-shadow:0 0 0 4px var(--blue-soft); }
+  .par { display:grid; grid-template-columns:1fr 22px 1fr; align-items:end; gap:6px; margin-bottom:14px; }
+  .par .flecha { width:22px; height:46px; color:var(--ink3); }
+  .monto { position:relative; margin-bottom:14px; }
+  .monto input { font-family:var(--mono); font-size:26px; font-weight:600; height:64px; padding-right:90px; }
+  .monto span { position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--ink3); font-size:14px; pointer-events:none; }
+  .interruptor { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 16px; color:var(--ink2); font-size:13px; cursor:pointer; }
+  .sw { position:relative; flex:none; width:42px; height:25px; margin:0; appearance:none; -webkit-appearance:none; border-radius:999px; background:var(--line); cursor:pointer; transition:background .2s; outline:none; }
+  .sw::after { content:""; position:absolute; top:2.5px; left:2.5px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .2s; }
+  .sw:checked { background:var(--red); }
+  .sw:checked::after { transform:translateX(17px); }
+  .sw:focus-visible { box-shadow:0 0 0 4px var(--blue-soft); }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:46px; padding:0 20px; border-radius:12px; border:1.5px solid transparent; font:inherit; font-size:15px; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
+  .btn:focus-visible { outline:none; box-shadow:0 0 0 4px var(--blue-soft); }
+  .btn.ancho { width:100%; }
+  .btn.pri { background:var(--blue); color:#fff; }
+  .btn.pri:hover { background:#1a2bd9; }
+  .btn.sec { background:var(--paper); border-color:var(--ink); color:var(--ink); }
+  .btn.sec:hover { background:var(--ink); color:#fff; }
+  .btn.suave { background:var(--paper); border-color:var(--line); color:var(--ink); height:40px; font-size:14px; padding:0 16px; }
+  .btn.suave:hover { border-color:var(--ink); }
+  .btn.peligro { background:var(--red); color:#fff; height:40px; font-size:14px; }
+  .btn:disabled { background:var(--line2); border-color:transparent; color:var(--ink3); cursor:not-allowed; }
+
+  /* Ticket de la transacción pendiente */
+  .ticket { margin:20px 0 14px; padding:16px; border-radius:14px; background:var(--chalk); }
+  .ticket.mal { background:var(--red-soft); }
+  .t-par { display:flex; align-items:center; gap:10px; font-weight:600; font-size:17px; }
+  .t-par svg { width:20px; height:20px; color:var(--ink3); }
+  .t-monto { display:flex; align-items:baseline; gap:8px; margin:6px 0 12px; }
+  .t-monto b { font-family:var(--mono); font-size:34px; line-height:1; font-weight:600; }
+  .t-monto span { color:var(--ink2); }
+  .t-pie { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12.5px; color:var(--ink2); }
+
+  .chip { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 11px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; }
+  .chip svg { width:14px; height:14px; }
+  .chip.ok { background:var(--green-soft); color:var(--green); }
+  .chip.mal { background:var(--red-soft); color:var(--red); }
+
+  /* Billeteras */
+  .billeteras li { display:flex; align-items:center; gap:14px; padding:12px 0; border-top:1px solid var(--line2); }
+  .billeteras li:first-child { border-top:0; padding-top:4px; }
+  .avatar { flex:none; width:38px; height:38px; border-radius:50%; background:var(--ink); color:#fff; display:grid; place-items:center; font-weight:700; font-size:16px; }
+  .billeteras .quien { flex:1; min-width:0; }
+  .billeteras .quien b { display:block; font-size:15px; }
+  .billeteras .quien span { color:var(--ink3); font-size:11.5px; }
+  .billeteras .saldo { font-size:26px; font-weight:600; }
+
+  /* Carrera */
+  .objetivo { text-align:right; }
+  .objetivo .et { display:block; color:var(--ink3); font-size:13px; }
+  .objetivo .ceros { font-size:30px; font-weight:700; letter-spacing:.06em; color:var(--blue); line-height:1.15; }
+  .objetivo .ceros::after { content:"····"; color:var(--line); letter-spacing:.02em; margin-left:2px; }
+  .estado { display:flex; align-items:center; gap:10px; margin-top:6px; color:var(--ink2); font-size:14px; }
+  .estado.minando { color:var(--blue); }
+  .estado.fin { color:var(--green); }
+  .giro { width:14px; height:14px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:g .8s linear infinite; flex:none; }
+  .estado:not(.minando) .giro { display:none; }
+  @keyframes g { to { transform:rotate(360deg); } }
+
+  .carriles { display:flex; flex-direction:column; gap:10px; }
+  .carril { display:grid; grid-template-columns:150px minmax(0,1fr) 118px 74px; align-items:center; gap:18px; padding:13px 18px; border:1.5px solid var(--line2); border-radius:12px; transition:background .3s, border-color .3s; }
+  .carril.ganador { background:var(--green-soft); border-color:var(--green); }
+  .carril .id b { display:block; font-size:16px; }
+  .carril .paso { display:block; color:var(--ink3); font-size:11.5px; }
+  .carril .insignia { display:none; align-items:center; gap:5px; color:var(--green); font-size:13px; font-weight:700; }
+  .carril .insignia svg { width:16px; height:16px; }
+  .carril.ganador .insignia { display:inline-flex; }
+  .carril.ganador .paso { display:none; }
+  .traza { min-width:0; }
+  .hash { font-size:13px; white-space:nowrap; overflow:hidden; color:var(--ink3); letter-spacing:0; height:20px; }
+  .hash .z { color:var(--blue); font-weight:700; }
+  .carril.ganador .hash .z { color:var(--green); }
+  .slots { display:flex; align-items:center; gap:12px; margin-top:7px; }
+  .barras { display:flex; gap:5px; }
+  .barras i { width:30px; height:7px; border-radius:4px; background:var(--line); transition:background .25s; }
+  .barras i.on { background:var(--blue); }
+  .carril.ganador .barras i.on { background:var(--green); }
+  .slots .cap { color:var(--ink3); font-size:12px; }
+  .cuenta { text-align:right; }
+  .cuenta b { display:block; font-size:25px; line-height:1.1; font-weight:600; }
+  .cuenta span, .carril .saldo span { color:var(--ink3); font-size:12px; }
+  .carril .saldo { text-align:right; }
+  .carril .saldo b { display:block; font-size:19px; font-weight:600; }
+
+  /* Cadena */
+  .titulo { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .acciones { display:flex; align-items:center; gap:10px; position:relative; }
+  details.menu { position:relative; }
+  details.menu summary { list-style:none; cursor:pointer; user-select:none; }
+  details.menu summary::-webkit-details-marker { display:none; }
+  .menu-caja { position:absolute; right:0; top:48px; z-index:20; width:290px; padding:16px; background:var(--paper); border:1px solid var(--line); border-radius:14px; box-shadow:0 18px 40px rgba(20,22,26,.14); }
+  .menu-caja .campo { margin-bottom:12px; }
+  .errores { margin:-4px 0 16px; padding:12px 16px; border-radius:12px; background:var(--red-soft); color:var(--red); font-size:13px; }
+  .errores li { margin-top:3px; }
+
+  .pista { overflow-x:auto; padding:2px 2px 14px; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+  .eslabones { display:flex; align-items:stretch; width:max-content; }
+  .bq { flex:none; width:240px; display:flex; flex-direction:column; gap:12px; padding:14px; background:var(--paper); border:1.5px solid var(--line); border-radius:14px; }
+  .bq.mal { border-color:var(--red); }
+  .bq.aterriza { animation:aterriza .7s cubic-bezier(.2,.8,.2,1); }
+  @keyframes aterriza { from { transform:translateY(-22px) scale(.96); opacity:0; } to { transform:none; opacity:1; } }
+  .huella { display:grid; grid-template-columns:repeat(5,1fr); gap:3px; width:56px; height:56px; flex:none; }
+  .huella i { border-radius:2px; background:var(--line2); transition:background .25s; }
+  .huella i.on { background:var(--ink); }
+  .bq.mal .huella i.on { background:var(--red); }
+  .huella.mini { display:inline-grid; width:20px; height:20px; gap:1px; vertical-align:middle; }
+  .huella.mini i { border-radius:1px; }
+  .bq-cab { display:flex; align-items:center; gap:14px; }
+  .bq-top { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+  .bq-top b { font-size:16px; }
+  .tag { font-size:12px; color:var(--ink3); }
+  .tag.mal { color:#fff; background:var(--red); padding:1px 9px; border-radius:999px; font-weight:600; }
+  .tag.gan { display:inline-flex; align-items:center; gap:4px; color:var(--green); font-weight:700; }
+  .tag.gan svg { width:15px; height:15px; }
+  .bq .par-tx { display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; }
+  .bq .par-tx svg { width:16px; height:16px; color:var(--ink3); }
+  .bq .monto-tx { display:flex; align-items:baseline; gap:6px; margin-top:2px; }
+  .bq .monto-tx b { font-family:var(--mono); font-size:26px; line-height:1; font-weight:600; }
+  .bq .monto-tx span { color:var(--ink3); font-size:13px; }
+  .bq dl { display:grid; grid-template-columns:68px 1fr; gap:7px 8px; font-size:12.5px; align-items:center; }
+  .bq dt { color:var(--ink3); }
+  .bq dd { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bq dd .z { color:var(--blue); font-weight:700; }
+  .bq dd.rojo { color:var(--red); }
+  .plus { color:var(--green); font-weight:700; margin-left:4px; }
+  .fallos { display:flex; flex-wrap:wrap; gap:6px; }
+  .fallos li { background:var(--red-soft); color:var(--red); font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; }
+  .enlace { flex:none; width:44px; display:grid; place-items:center; color:var(--ink3); }
+  .enlace svg { width:44px; height:20px; }
+  .enlace.roto { color:var(--red); }
+  .bq.fantasma { border-style:dashed; background:transparent; justify-content:center; align-items:center; text-align:center; gap:10px; color:var(--ink3); min-height:250px; }
+  .bq.fantasma .huella i { background:var(--line2); }
+  .bq.fantasma b { color:var(--ink2); font-size:15px; }
+  .bq.fantasma p { font-size:13px; max-width:180px; }
+  .bq.fantasma.minando { border-color:var(--blue); }
+  .bq.fantasma.minando .huella i { animation:parpadeo 1.2s ease-in-out infinite; }
+  .bq.fantasma.minando .huella i:nth-child(3n) { animation-delay:-.4s; }
+  .bq.fantasma.minando .huella i:nth-child(3n+1) { animation-delay:-.8s; }
+  .bq.fantasma.minando .huella i:nth-child(7n) { animation-delay:-.2s; }
+  .bq.fantasma.minando b { color:var(--blue); }
+  @keyframes parpadeo { 0%,100% { background:var(--line2); } 50% { background:var(--blue); } }
+
+  .toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:50; max-width:min(640px, 90vw); padding:12px 20px; border-radius:12px; font-size:14px; font-weight:600; color:#fff; background:var(--ink); animation:toast 6s ease forwards; }
+  .toast.error { background:var(--red); }
+  .toast.ok { background:var(--ink); }
+  @keyframes toast { 0% { opacity:0; transform:translate(-50%,8px); } 6% { opacity:1; transform:translate(-50%,0); } 88% { opacity:1; } 100% { opacity:0; visibility:hidden; } }
+
+  @media (max-width:1060px) {
+    .app { grid-template-columns:1fr; }
+    .carril { grid-template-columns:1fr 100px; }
+    .carril .traza { grid-column:1 / -1; order:3; }
+    .carril .saldo { display:none; }
+  }
+  @media (max-width:640px) { .app { padding:0 16px 20px; } .top { height:auto; padding:16px 0 4px; flex-wrap:wrap; gap:8px; } .top h1 { white-space:nowrap; } .params { gap:16px; } }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-trofeo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H5.5A1.5 1.5 0 0 0 4 7.5V8a3 3 0 0 0 3 3h1"/><path d="M16 6h2.5A1.5 1.5 0 0 1 20 7.5V8a3 3 0 0 1-3 3h-1"/><path d="M12 13v4"/><path d="M9 20h6"/><path d="M10 17h4v3h-4z"/>
+  </symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+</svg>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for cat, m in mensajes %}<div class="toast {{ cat }}" role="status">{{ m }}</div>{% endfor %}
+{% endwith %}
+
+<div class="app">
+  <header class="top">
+    <h1>
+      <svg width="34" height="20" viewBox="0 0 34 20" fill="none" aria-hidden="true"><rect x="1" y="3" width="10" height="14" rx="3" fill="#2438F5"/><rect x="12" y="9" width="10" height="2" fill="#14161A"/><rect x="23" y="3" width="10" height="14" rx="3" fill="#14161A"/></svg>
+      Proof of Work
+    </h1>
+    <dl class="params">
+      <div><dt>Dificultad</dt><dd class="mono">{{ dificultad }}</dd></div>
+      <div><dt>Recompensa</dt><dd class="mono">{{ recompensa }}</dd></div>
+      <div><dt>Nodos</dt><dd class="mono">{{ n_nodos }}</dd></div>
+    </dl>
+  </header>
+
+  <aside class="izq">
+    <section class="panel" aria-labelledby="h-tx">
+      <h2 id="h-tx" style="margin-bottom:18px">Transacción</h2>
+      <form method="post" action="/transaccion">
+        <div class="par">
+          <div><label for="remitente">De</label>
+            <select id="remitente" name="remitente">{% for u in usuarios %}<option>{{ u.nombre }}</option>{% endfor %}</select></div>
+          <svg class="flecha" aria-hidden="true"><use href="#i-flecha"/></svg>
+          <div><label for="para">Para</label>
+            <select id="para" name="para">{% for u in usuarios %}<option {% if loop.index == 2 %}selected{% endif %}>{{ u.nombre }}</option>{% endfor %}</select></div>
+        </div>
+        <label for="monto">Monto</label>
+        <div class="monto"><input id="monto" type="number" name="monto" value="10" step="1" inputmode="numeric"><span>monedas</span></div>
+        <label class="interruptor"><span>Alterar el monto después de firmar</span><input class="sw" type="checkbox" name="alterar" role="switch"></label>
+        <button class="btn sec ancho" type="submit" {% if estado.minando %}disabled{% endif %}>Firmar transacción</button>
+      </form>
+
+      {% if pendiente %}
+        <div class="ticket {% if not pendiente.firma_ok %}mal{% endif %}">
+          <div class="t-par"><span>{{ pendiente.remitente }}</span><svg aria-hidden="true"><use href="#i-flecha"/></svg><span>{{ pendiente.para }}</span></div>
+          <div class="t-monto"><b>{{ pendiente.monto }}</b><span>monedas</span></div>
+          <div class="t-pie">
+            {% if pendiente.firma_ok %}<span class="chip ok"><svg><use href="#i-ok"/></svg>Firma válida</span>
+            {% else %}<span class="chip mal"><svg><use href="#i-no"/></svg>Se rechazará</span>{% endif %}
+            <span class="mono">secuencia {{ pendiente.secuencia }}</span>
+          </div>
+        </div>
+      {% else %}
+        <p class="vacio" style="margin:18px 0 14px">Firma una transacción para poder minar.</p>
+      {% endif %}
+      <form method="post" action="/minar">
+        <button class="btn pri ancho" type="submit" {% if estado.minando or not pendiente %}disabled{% endif %}>Minar bloque</button>
+      </form>
+    </section>
+
+    <section class="panel billeteras" aria-labelledby="h-bill">
+      <h2 id="h-bill" style="margin-bottom:12px">Billeteras</h2>
+      <ul>
+        {% for u in usuarios %}
+        <li>
+          <span class="avatar" aria-hidden="true">{{ u.nombre[0] }}</span>
+          <div class="quien"><b>{{ u.nombre }}</b><span class="mono">{{ u.pub }}</span></div>
+          <div class="saldo mono">{{ u.saldo }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
+
+  <main class="der">
+    <section class="panel" aria-labelledby="h-carrera">
+      <div class="p-head" style="margin-bottom:16px">
+        <div>
+          <h2 id="h-carrera">Carrera de minería</h2>
+          <p id="estado" class="estado {% if estado.minando %}minando{% elif estado.ganador %}fin{% endif %}" role="status" aria-live="polite">
+            <span class="giro" aria-hidden="true"></span>
+            <span id="estado-texto">{% if estado.minando %}Los {{ n_nodos }} nodos buscan un nonce{% elif estado.ganador %}Ganó {{ estado.ganador }} con el nonce {{ estado.nonce_ganador }} en {{ '%.2f' % estado.duracion }} s, tras {{ '{:,}'.format(estado.intentos_total) }} intentos entre todos{% else %}Esperando una transacción firmada{% endif %}</span>
+          </p>
+        </div>
+        <div class="objetivo">
+          <span class="et">El hash debe empezar con</span>
+          <span class="ceros mono">{{ '0' * dificultad }}</span>
+        </div>
+      </div>
+
+      <div class="carriles">
+        {% for n in nodos %}
+        {% set z = (n.ultimo|length) - (n.ultimo.lstrip('0')|length) %}
+        <article class="carril {% if estado.ganador == n.nombre %}ganador{% endif %}" data-i="{{ n.i }}" data-nombre="{{ n.nombre }}">
+          <div class="id">
+            <b>{{ n.nombre }}</b>
+            <span class="paso mono">nonce {{ n.i }}, {{ n.i + n_nodos }}, {{ n.i + 2 * n_nodos }}…</span>
+            <span class="insignia"><svg aria-hidden="true"><use href="#i-trofeo"/></svg>Ganador, +{{ recompensa }}</span>
+          </div>
+          <div class="traza">
+            <div class="hash mono">{% if n.ultimo %}<span class="z">{{ n.ultimo[:z] }}</span>{{ n.ultimo[z:] }}{% else %}Sin intentos todavía{% endif %}</div>
+            <div class="slots">
+              <span class="barras" aria-hidden="true">{% for k in range(dificultad) %}<i class="{% if k < n.mejor %}on{% endif %}"></i>{% endfor %}</span>
+              <span class="cap"><span class="mejor">{{ n.mejor }}</span> de {{ dificultad }} ceros</span>
+            </div>
+          </div>
+          <div class="cuenta"><b class="mono intentos">{{ '{:,}'.format(n.intentos) }}</b><span>intentos</span></div>
+          <div class="saldo"><span>Saldo</span><b class="mono s">{{ n.saldo }}</b></div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel" style="flex:1" aria-labelledby="h-cadena">
+      <div class="p-head">
+        <div class="titulo">
+          <h2 id="h-cadena">Cadena de bloques</h2>
+          {% if valida %}<span class="chip ok"><svg><use href="#i-ok"/></svg>Cadena válida</span>
+          {% else %}<span class="chip mal"><svg><use href="#i-no"/></svg>Cadena inválida</span>{% endif %}
+        </div>
+        <div class="acciones">
+          {% if alterada %}<form method="post" action="/restaurar"><button class="btn suave" type="submit">Restaurar cadena</button></form>{% endif %}
+          <details class="menu">
+            <summary class="btn suave">Probar alteración</summary>
+            <div class="menu-caja">
+              <form method="post" action="/alterar">
+                <div class="campo"><label for="numero">Bloque</label>
+                  <select id="numero" name="numero">{% for b in bloques if b.numero > 0 %}<option>{{ b.numero }}</option>{% endfor %}</select></div>
+                <div class="campo"><label for="modo">Qué cambiar</label>
+                  <select id="modo" name="modo">
+                    {% for m in modos %}<option value="{{ m }}">{{ {'contenido':'El monto, sin rehacer el hash','contenido_y_hash':'El monto y recalcular el hash','hash':'El hash guardado','firma':'La firma','minero':'El minero, para robar la recompensa'}[m] }}</option>{% endfor %}
+                  </select></div>
+                <button type="submit" class="btn peligro ancho" {% if bloques|length < 2 or estado.minando %}disabled{% endif %}>Alterar bloque</button>
+              </form>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {% if not valida %}
+        <div class="errores" role="alert"><b>La validación encontró {{ errores|length }} {{ 'problema' if errores|length == 1 else 'problemas' }}</b>
+          <ul>{% for e in errores %}<li>Bloque {{ e.bloque }}, {{ e.regla }}: {{ e.detalle }}</li>{% endfor %}</ul></div>
+      {% endif %}
+
+      <div class="pista" id="pista">
+        <ol class="eslabones">
+          {% for b in bloques %}
+            {% if not loop.first %}
+              <li class="enlace {% if not b.enlace_ok %}roto{% endif %}" aria-label="{{ 'Enlace roto' if not b.enlace_ok else 'Enlace correcto' }}">
+                <svg viewBox="0 0 44 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" {% if not b.enlace_ok %}stroke-dasharray="3 5"{% endif %}>
+                  <path d="M3 10h30"/>{% if b.enlace_ok %}<path d="M29 5l6 5-6 5"/>{% else %}<path d="M36 5l5 10M41 5l-5 10" stroke-dasharray="0"/>{% endif %}
+                </svg>
+              </li>
+            {% endif %}
+            <li class="bq {% if not b.ok %}mal{% endif %}" data-hash="{{ b.hash }}" {% if b.ganador %}data-ganador="1"{% endif %}>
+              <div class="bq-cab">
+                <div class="huella" aria-hidden="true">{% for on in b.huella %}<i class="{{ 'on' if on }}"></i>{% endfor %}</div>
+                <div class="bq-top">
+                  <b>Bloque {{ b.numero }}</b>
+                  {% if b.genesis %}<span class="tag">génesis</span>
+                  {% elif not b.ok %}<span class="tag mal">Alterado</span>
+                  {% elif b.ganador %}<span class="tag gan"><svg aria-hidden="true"><use href="#i-trofeo"/></svg>Ganador</span>{% endif %}
+                </div>
+              </div>
+              {% if b.resumen %}
+                <div>
+                  <div class="par-tx"><span>{{ b.resumen.de }}</span><svg aria-hidden="true"><use href="#i-flecha"/></svg><span>{{ b.resumen.para }}</span></div>
+                  <div class="monto-tx"><b>{{ b.resumen.monto }}</b><span>monedas</span></div>
+                </div>
+              {% else %}
+                <div class="par-tx"><span>Saldos iniciales</span></div>
+              {% endif %}
+              <dl>
+                <dt>Minero</dt><dd>{{ b.minero }}{% if not b.genesis %}<span class="plus">+{{ recompensa }}</span>{% endif %}</dd>
+                <dt>Nonce</dt><dd class="mono">{{ b.nonce }}</dd>
+                <dt>Viene de</dt><dd>{% if b.genesis %}ninguno{% else %}<span class="huella mini" aria-hidden="true">{% for on in b.huella_ant %}<i class="{{ 'on' if on }}"></i>{% endfor %}</span>{% endif %}</dd>
+                <dt>Hash</dt><dd class="mono" title="{{ b.hash }}"><span class="z">{{ b.hash_z }}</span>{{ b.hash_r }}</dd>
+                {% if b.recalculado %}<dt>Recalculado</dt><dd class="mono rojo">{{ b.recalculado }}</dd>{% endif %}
+              </dl>
+              {% if b.fallos %}<ul class="fallos">{% for f in b.fallos %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+            </li>
+          {% endfor %}
+          <li class="enlace" aria-hidden="true"><svg viewBox="0 0 44 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 5"><path d="M3 10h30"/></svg></li>
+          <li class="bq fantasma {% if estado.minando %}minando{% endif %}" id="fantasma">
+            <div class="huella" aria-hidden="true">{% for k in range(25) %}<i></i>{% endfor %}</div>
+            <b>Siguiente bloque</b>
+            <p id="fantasma-texto">{% if estado.minando %}Buscando un nonce válido{% elif pendiente %}Pulsa Minar bloque{% else %}Firma una transacción para empezar{% endif %}</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const fmt = new Intl.NumberFormat('en-US');
+  let estabaMinando = {{ 'true' if estado.minando else 'false' }};
+
+  // Hash con los ceros iniciales resaltados.
+  function pintarHash(el, h) {
+    if (!h) { el.textContent = 'Sin intentos todavía'; return; }
+    const z = h.length - h.replace(/^0+/, '').length;
+    el.innerHTML = '<span class="z">' + h.slice(0, z) + '</span>' + h.slice(z);
+  }
+
+  async function tick() {
+    try {
+      const e = await (await fetch('/estado')).json();
+      e.nodos.forEach(n => {
+        const el = document.querySelector('.carril[data-i="' + n.i + '"]');
+        if (!el) return;
+        pintarHash(el.querySelector('.hash'), n.ultimo);
+        el.querySelector('.intentos').textContent = fmt.format(n.intentos);
+        el.querySelector('.s').textContent = n.saldo;
+        el.querySelector('.mejor').textContent = n.mejor;
+        el.querySelectorAll('.barras i').forEach((b, k) => b.classList.toggle('on', k < n.mejor));
+        el.classList.toggle('ganador', e.ganador === n.nombre);
+      });
+      if (e.minando) {
+        const st = document.getElementById('estado');
+        st.className = 'estado minando';
+        document.getElementById('estado-texto').textContent = 'Los ' + e.nodos.length + ' nodos buscan un nonce';
+        const f = document.getElementById('fantasma');
+        f.classList.add('minando');
+        document.getElementById('fantasma-texto').textContent = 'Buscando un nonce válido';
+      }
+      if (estabaMinando && !e.minando) { location.reload(); return; }   // muestra ganador y nuevo bloque
+      estabaMinando = e.minando;
+    } catch (_) { /* servidor ocupado: reintenta en el siguiente ciclo */ }
+  }
+  setInterval(tick, 300);
+
+  // La cadena se lee de izquierda a derecha: al cargar, el último bloque queda a la vista.
+  window.addEventListener('DOMContentLoaded', () => {
+    const pista = document.getElementById('pista');
+    pista.scrollLeft = pista.scrollWidth;
+    // El bloque recién minado "aterriza" una sola vez.
+    const nuevo = document.querySelector('.bq[data-ganador="1"]');
+    if (nuevo) {
+      let visto = null;
+      try { visto = sessionStorage.getItem('ultimo_bloque'); } catch (_) {}
+      if (visto !== nuevo.dataset.hash) {
+        nuevo.classList.add('aterriza');
+        try { sessionStorage.setItem('ultimo_bloque', nuevo.dataset.hash); } catch (_) {}
+      }
+    }
+  });
+</script>
+</body>
+</html>
