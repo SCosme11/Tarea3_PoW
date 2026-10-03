@@ -4,9 +4,6 @@ Aplicación web en Python en la que **cuatro nodos mineros compiten en hilos** p
 
 Proyecto de la materia *Fundamentos de Blockchain* (Universidad Anáhuac México). El propósito de la cadena es **moneda con saldo**: cada bloque registra una transferencia entre billeteras y el sistema valida saldo suficiente y una secuencia anti-repetición antes de minar.
 
-![Carrera de minería en vivo](docs/captura_carrera.png)
-
-*Cuatro nodos probando hashes en vivo (dificultad 6 para alargar la carrera). Más capturas: [cadena válida](docs/captura_cadena_valida.png) y [cadena alterada](docs/captura_cadena_alterada.png).*
 
 ## Qué incluye
 
